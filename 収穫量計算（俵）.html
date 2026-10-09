@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>収穫量計算（俵）</title>
+<style>
+:root{--bg:#fff;--ink:#111;--sub:#444;--line:#111;--green:#0b5d2a;--gold:#8a5400;--grid:rgba(0,0,0,.13);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0b0b;--ink:#fff;--sub:#cfcfcf;--line:#fff;--green:#6ee08a;--gold:#ffcf4d;--grid:rgba(255,255,255,.16)}}
+:root[data-theme="dark"]{--bg:#0b0b0b;--ink:#fff;--sub:#cfcfcf;--line:#fff;--green:#6ee08a;--gold:#ffcf4d;--grid:rgba(255,255,255,.16)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background-color:var(--bg);background-image:linear-gradient(var(--grid) 2px,transparent 2px),linear-gradient(90deg,var(--grid) 2px,transparent 2px);background-size:64px 64px;background-position:-1px -1px;color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.6}
+main{max-width:860px;margin:0 auto;padding:20px 14px 48px}
+h1{font-size:1.5rem;font-weight:800;margin:4px 0 6px;letter-spacing:.04em;padding-bottom:8px;border-bottom:4px solid var(--ink)}
+.lead{color:var(--sub);font-size:.92rem;margin:0 0 18px}
+.total{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
+.total>div{background:var(--bg);border:3px solid var(--green);border-radius:6px;padding:12px 14px}
+.total span{font-size:.82rem;font-weight:700;color:var(--sub);display:block}
+.total b{display:block;font-size:2.1rem;line-height:1.15;color:var(--green);font-variant-numeric:tabular-nums}
+.card{background:var(--bg);border:2px solid var(--line);border-radius:6px;padding:14px;margin-bottom:14px}
+.row1{display:grid;grid-template-columns:1fr;gap:12px}
+.row1>div:nth-child(1){grid-column:1/-1}
+@media(min-width:640px){.row1{grid-template-columns:1fr 1fr 1fr}.row1>div:nth-child(1){grid-column:auto}}
+label{display:block;font-size:.8rem;font-weight:700;color:var(--ink);margin-bottom:3px}
+.pair{display:flex;gap:6px}
+input,select,button{font:inherit;font-size:1rem;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:4px;padding:8px 10px;min-height:46px}
+input{width:100%;min-width:0}
+select{flex:0 0 auto;background:var(--bg)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.res{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;margin-top:14px;padding-top:12px;border-top:2px dashed var(--line)}
+.res .big{font-size:1.9rem;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+.res .big small{font-size:.95rem;font-weight:700;color:var(--ink);margin-left:3px}
+.res .m{font-size:1rem;font-weight:700;font-variant-numeric:tabular-nums}.res .m small{color:var(--sub);font-weight:500}
+.bar{height:16px;border:2px solid var(--line);border-radius:4px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--green);width:0;transition:width .25s}
+.del{margin-top:10px;font-size:.85rem;font-weight:700;cursor:pointer;min-height:38px;padding:4px 12px}
+.del:hover{background:var(--ink);color:var(--bg)}
+.bar-note{font-size:.75rem;color:var(--sub);margin-top:4px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.tools button{background:var(--bg);cursor:pointer;padding:8px 16px;font-weight:700}
+.tools button:hover{background:var(--ink);color:var(--bg)}
+.tools .primary{border:3px solid var(--green);color:var(--green)}
+.tools .primary:hover{background:var(--green);color:var(--bg)}
+details{margin-top:8px;font-size:.92rem}
+summary{background:var(--bg);cursor:pointer;font-weight:700;border:2px solid var(--line);border-radius:4px;padding:8px 12px;display:inline-block}
+textarea{display:block;width:100%;margin-top:10px;font:.85rem/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:4px;padding:10px}
+textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.set{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}.set div{width:160px}
+</style>
+</head>
+<body>
+<main>
+<h1>収穫量計算（俵）</h1>
+<p class="lead">圃場ごとに面積と収量を入れると、俵数と反あたりの俵数が出ます。</p>
+
+<section class="total" aria-live="polite">
+  <div><span>合計収量</span><b id="tTawara">0</b><span id="tKg">0 kg</span></div>
+  <div><span>合計地積（反）</span><b id="tChi">0</b><span id="tKou">耕作範囲 0 反</span></div>
+  <div><span>平均 地積あたり（俵/反）</span><b id="tAvgChi">–</b><span id="tAvgKou">耕作あたり – 俵/反</span></div>
+</section>
+
+<div id="list"></div>
+
+<div class="tools">
+  <button class="primary" id="add" type="button">圃場を追加</button>
+  <button id="copy" type="button">表をコピー</button>
+  <button id="clear" type="button">すべて消す</button>
+  <button id="exp" type="button">JSON書き出し</button>
+  <button id="imp" type="button">JSON読み込み</button>
+  <input id="file" type="file" accept=".json,application/json" hidden>
+</div>
+<p id="msg" class="bar-note" role="status"></p>
+<details id="jsonBox">
+  <summary>JSONを貼り付けて読み込み／コピー</summary>
+  <textarea id="jsonText" rows="8" spellcheck="false" aria-label="JSONデータ"></textarea>
+  <div class="tools"><button id="impText" type="button">貼り付けから読み込み</button><button id="copyJson" type="button">現在のJSONをコピー</button></div>
+</details>
+
+<details>
+  <summary>換算の設定</summary>
+  <div class="set">
+    <div><label for="kgTawara">1俵（kg）</label><input id="kgTawara" type="number" step="any" value="60"></div>
+    <div><label for="kgBag">1袋（kg）</label><input id="kgBag" type="number" step="any" value="30"></div>
+  </div>
+  <p class="bar-note">1反＝10a＝約991.7㎡（300坪）で計算しています。収量は玄米の重さを入れてください。</p>
+</details>
+</main>
+
+<script>
+const AREA={"a":["a（アール）",100],"反":["反",991.7355],"㎡":["㎡",1],"坪":["坪",3.305785],"町":["町",9917.355]};
+const KEY="rice-yield-v1";
+let rows=[],cfg={kgTawara:60,kgBag:30};
+const $=id=>document.getElementById(id);
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const fmt=(n,d=1)=>n.toLocaleString("ja-JP",{minimumFractionDigits:0,maximumFractionDigits:d});
+
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s){rows=s.rows||[];cfg=Object.assign(cfg,s.cfg||{});rows.forEach(r=>{if("area" in r){r.chi=r.area;r.cUnit=r.aUnit;r.kou="";r.kUnit=r.aUnit;delete r.area;delete r.aUnit}})}}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({rows,cfg}))}catch(e){}}
+function newRow(){return{name:"",chi:"",cUnit:"a",kou:"",kUnit:"a",yld:"",yUnit:"kg"}}
+function toKg(r){const y=num(r.yld);return r.yUnit==="俵"?y*cfg.kgTawara:r.yUnit==="袋"?y*cfg.kgBag:y}
+function tanOf(v,u){return num(v)*AREA[u][1]/AREA["反"][1]}
+const unitOpts=(k,sel)=>Object.keys(AREA).map(u=>`<option value="${u}"${u===sel?" selected":""}>${AREA[u][0]}</option>`).join("");
+
+function render(){
+  $("kgTawara").value=cfg.kgTawara;$("kgBag").value=cfg.kgBag;
+  const list=$("list");list.innerHTML="";
+  rows.forEach((r,i)=>{
+    const c=document.createElement("div");c.className="card";
+    c.innerHTML=`<div class="row1">
+      <div><label>圃場名</label><input data-k="name" placeholder="例：北の田" value="${esc(r.name)}"></div>
+      <div><label>地積（登記面積）</label><div class="pair"><input data-k="chi" type="number" inputmode="decimal" step="any" value="${esc(r.chi)}"><select data-k="cUnit">${unitOpts("c",r.cUnit)}</select></div></div>
+      <div><label>耕作範囲（実耕作面積）</label><div class="pair"><input data-k="kou" type="number" inputmode="decimal" step="any" value="${esc(r.kou)}"><select data-k="kUnit">${unitOpts("k",r.kUnit)}</select></div></div>
+      <div><label>収量</label><div class="pair"><input data-k="yld" type="number" inputmode="decimal" step="any" value="${esc(r.yld)}"><select data-k="yUnit">${["kg","袋","俵"].map(k=>`<option${k===r.yUnit?" selected":""}>${k}</option>`).join("")}</select></div></div>
+    </div>
+    <div class="res"></div><div class="bar"><i></i></div><div class="bar-note">棒は耕作範囲（未入力なら地積）あたり10俵/反を満点とした目安</div>`;
+    const del=document.createElement("button");del.type="button";del.className="del";del.textContent="この圃場を削除";
+    del.onclick=()=>{rows.splice(i,1);save();render()};c.appendChild(del);
+    c.querySelectorAll("[data-k]").forEach(el=>el.addEventListener("input",()=>{r[el.dataset.k]=el.value;save();calc()}));
+    list.appendChild(c);
+  });
+  calc();
+}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+
+function calc(){
+  let kgSum=0,chiSum=0,kouSum=0;
+  [...$("list").children].forEach((c,i)=>{
+    const r=rows[i],kg=toKg(r),chi=tanOf(r.chi,r.cUnit),kou=tanOf(r.kou,r.kUnit),taw=kg/cfg.kgTawara;
+    kgSum+=kg;chiSum+=chi;kouSum+=kou;
+    const pc=chi>0?taw/chi:0,pk=kou>0?taw/kou:0,base=kou>0?pk:pc;
+    c.querySelector(".res").innerHTML=`<span class="big">${fmt(taw)}<small>俵</small></span>
+      <span class="m"><small>地積あたり</small> ${chi>0?fmt(pc,2):"–"} <small>俵/反</small></span>
+      <span class="m"><small>耕作あたり</small> ${kou>0?fmt(pk,2):"–"} <small>俵/反</small></span>
+      <span class="m"><small>地積</small> ${fmt(chi,2)} <small>反</small></span>
+      <span class="m"><small>耕作</small> ${fmt(kou,2)} <small>反</small></span>`;
+    c.querySelector(".bar i").style.width=Math.min(100,base/10*100)+"%";
+  });
+  const taw=kgSum/cfg.kgTawara;
+  $("tTawara").textContent=fmt(taw)+" 俵";
+  $("tKg").textContent=fmt(kgSum,0)+" kg";
+  $("tChi").textContent=fmt(chiSum,2);
+  $("tKou").textContent="耕作範囲 "+fmt(kouSum,2)+" 反";
+  $("tAvgChi").textContent=chiSum>0?fmt(taw/chiSum,2):"–";
+  $("tAvgKou").textContent="耕作あたり "+(kouSum>0?fmt(taw/kouSum,2):"–")+" 俵/反";
+}
+
+$("add").onclick=()=>{rows.push(newRow());save();render();const ins=$("list").querySelectorAll("input[data-k=name]");ins[ins.length-1].focus()};
+$("clear").onclick=()=>{if(!rows.length||confirm("入力した圃場をすべて消しますか？")){rows=[];save();render()}};
+$("copy").onclick=async()=>{
+  const head=["圃場","地積(反)","耕作範囲(反)","収量(kg)","俵","俵/反(地積)","俵/反(耕作)"];
+  const lines=[head.join("\t")].concat(rows.map(r=>{const kg=toKg(r),c=tanOf(r.chi,r.cUnit),k=tanOf(r.kou,r.kUnit),w=kg/cfg.kgTawara;return[r.name||"-",c.toFixed(2),k.toFixed(2),kg.toFixed(0),w.toFixed(1),c>0?(w/c).toFixed(2):"-",k>0?(w/k).toFixed(2):"-"].join("\t")}));
+  try{await navigator.clipboard.writeText(lines.join("\n"));$("copy").textContent="コピーしました"}catch(e){$("copy").textContent="コピーできませんでした"}
+  setTimeout(()=>$("copy").textContent="表をコピー",1800);
+};
+["kgTawara","kgBag"].forEach(id=>$(id).addEventListener("input",e=>{cfg[id]=num(e.target.value)||(id==="kgTawara"?60:30);save();calc()}));
+
+const toJSON=()=>JSON.stringify({app:"rice-yield",version:1,exportedAt:new Date().toISOString(),cfg,rows},null,2);
+const msg=t=>{$("msg").textContent=t};
+function applyImport(text){
+  let d;try{d=JSON.parse(text)}catch(e){msg("JSONとして読み込めませんでした");return}
+  const src=Array.isArray(d)?d:(d&&d.rows);
+  if(!Array.isArray(src)){msg("圃場データ（rows）が見つかりません");return}
+  const au=k=>AREA[k]?k:"a",yu=k=>["kg","袋","俵"].includes(k)?k:"kg",st=v=>v==null?"":String(v);
+  const nr=src.filter(r=>r&&typeof r==="object").map(r=>({name:st(r.name),chi:st(r.chi!=null?r.chi:r.area),cUnit:au(r.cUnit||r.aUnit),kou:st(r.kou),kUnit:au(r.kUnit||r.aUnit),yld:st(r.yld),yUnit:yu(r.yUnit)}));
+  if(rows.some(r=>r.name||r.chi||r.kou||r.yld)&&!confirm("現在の入力を上書きします。よろしいですか？"))return;
+  rows=nr.length?nr:[newRow()];
+  if(d&&d.cfg){const t=num(d.cfg.kgTawara),b=num(d.cfg.kgBag);if(t>0)cfg.kgTawara=t;if(b>0)cfg.kgBag=b}
+  save();render();msg(nr.length+" 件の圃場を読み込みました");
+}
+$("exp").onclick=async()=>{
+  const text=toJSON();$("jsonText").value=text;
+  let dl=null;try{dl=window.claude?await window.claude.use("downloads"):null}catch(e){}
+  if(!dl){$("jsonBox").open=true;msg("ファイル保存が使えないため、下の欄のJSONをコピーしてください");return}
+  try{await dl.save({filename:"rice-yield-"+new Date().toISOString().slice(0,10)+".json",data:text});msg("書き出しました")}
+  catch(e){if(e&&e.code==="declined"){msg("キャンセルしました")}else{$("jsonBox").open=true;msg("保存できなかったため、下の欄のJSONをコピーしてください")}}
+};
+$("imp").onclick=()=>$("file").click();
+$("file").addEventListener("change",e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=()=>applyImport(String(rd.result));rd.onerror=()=>msg("ファイルを読み込めませんでした");rd.readAsText(f);e.target.value="";
+});
+$("impText").onclick=()=>applyImport($("jsonText").value);
+$("copyJson").onclick=async()=>{const t=toJSON();$("jsonText").value=t;try{await navigator.clipboard.writeText(t);msg("JSONをコピーしました")}catch(e){$("jsonText").select();msg("欄のJSONを選択しました。コピーしてください")}};
+
+load();if(!rows.length)rows=[newRow()];render();
+</script>
+</body>
+</html>
